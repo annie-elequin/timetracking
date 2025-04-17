@@ -1,7 +1,7 @@
 .App {
+  padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
 }
 
 header {
@@ -11,18 +11,19 @@ header {
   margin-bottom: 2rem;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  background-color: #4285f4;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1rem;
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
-button:hover {
-  background-color: #3367d6;
+.group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  color: #666;
 }
 
 .tag-filter {
@@ -33,28 +34,120 @@ button:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.5rem;
 }
 
 .tag {
-  padding: 0.25rem 0.5rem;
-  background-color: #e0e0e0;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  background: #f0f0f0;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
   cursor: pointer;
-  transition: background-color 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
+  font-size: 0.9rem;
+  transition: all 0.2s;
 }
 
 .tag:hover {
-  background-color: #d0d0d0;
+  background: #e0e0e0;
 }
 
 .tag.active {
-  background-color: #4285f4;
+  background: #007bff;
   color: white;
+}
+
+.grouped-events {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.tag-group {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.tag-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.total-duration {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: normal;
+}
+
+.events {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.event {
+  background: white;
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.event h3 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
+}
+
+.event-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.time {
+  margin: 0;
+}
+
+.duration {
+  margin: 0;
+  font-weight: 500;
+  color: #007bff;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.error {
+  color: #dc3545;
+  padding: 1rem;
+  background: #f8d7da;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+button {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+}
+
+button:hover {
+  background: #0056b3;
 }
 
 .tag-description {
@@ -64,56 +157,6 @@ button:hover {
 
 .tag.active .tag-description {
   color: #e0e0e0;
-}
-
-.events {
-  list-style: none;
-  padding: 0;
-  display: grid;
-  gap: 1rem;
-}
-
-.event {
-  padding: 1rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.event h3 {
-  margin: 0 0 0.5rem 0;
-  color: #333;
-}
-
-.event p {
-  margin: 0.5rem 0;
-  color: #666;
-}
-
-.event .time {
-  font-size: 0.9rem;
-  color: #888;
-}
-
-.event .duration {
-  font-weight: bold;
-  color: #4285f4;
-}
-
-.error {
-  color: #d32f2f;
-  padding: 1rem;
-  background-color: #ffebee;
-  border-radius: 4px;
-  margin: 1rem 0;
-}
-
-.loading {
-  text-align: center;
-  padding: 2rem;
-  font-size: 1.2rem;
-  color: #666;
 }
 
 .auth-prompt {
@@ -131,4 +174,37 @@ button:hover {
 .auth-prompt p {
   color: #666;
   margin-bottom: 1.5rem;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.date-picker {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  width: 130px;
+}
+
+.date-range span {
+  color: #666;
+}
+
+/* Override react-datepicker styles */
+.react-datepicker-wrapper {
+  width: auto;
+}
+
+.react-datepicker__input-container input {
+  cursor: pointer;
 } 

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import './App.css';
 
 interface Event {
   id: string;
@@ -11,6 +14,27 @@ interface Event {
   duration?: number;
 }
 
+interface GroupedEvents {
+  [key: string]: {
+    events: Event[];
+    totalDuration: number;
+  };
+}
+
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      REACT_APP_API_URL?: string;
+    }
+  }
+}
+
+function formatDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hours}h ${mins}m`;
+}
+
 function App() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +42,13 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [groupByTag, setGroupByTag] = useState(true);
+  const [startDate, setStartDate] = useState<Date>(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 7); // Default to 7 days ago
+    return date;
+  });
+  const [endDate, setEndDate] = useState<Date>(new Date());
 
   const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
@@ -40,7 +71,11 @@ function App() {
 
     const fetchEvents = async () => {
       try {
-        const params = selectedTag ? { projectTag: selectedTag } : {};
+        const params = {
+          ...(selectedTag && { projectTag: selectedTag }),
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+        };
         const response = await axios.get(`${apiUrl}/api/events`, { params });
         setEvents(response.data);
         setError(null);
@@ -62,7 +97,7 @@ function App() {
     };
 
     checkAuthStatus();
-  }, [apiUrl, selectedTag]);
+  }, [apiUrl, selectedTag, startDate, endDate]);
 
   const handleGoogleAuth = () => {
     window.location.href = `${apiUrl}/auth/google`;
@@ -72,6 +107,48 @@ function App() {
     setSelectedTag(selectedTag === tag ? null : tag);
   };
 
+  const groupEventsByTag = (events: Event[]): GroupedEvents => {
+    return events.reduce((groups: GroupedEvents, event) => {
+      event.projectTags?.forEach(({ tag }) => {
+        if (!groups[tag]) {
+          groups[tag] = { events: [], totalDuration: 0 };
+        }
+        groups[tag].events.push(event);
+        groups[tag].totalDuration += event.duration || 0;
+      });
+      return groups;
+    }, {});
+  };
+
+  const renderEvent = (event: Event) => (
+    <li key={event.id} className="event">
+      <h3>{event.summary}</h3>
+      <div className="event-details">
+        <p className="time">
+          {new Date(event.start.dateTime).toLocaleString()} -{' '}
+          {new Date(event.end.dateTime).toLocaleString()}
+        </p>
+        {event.duration && (
+          <p className="duration">
+            Duration: {formatDuration(event.duration)}
+          </p>
+        )}
+      </div>
+    </li>
+  );
+
+  const handleStartDateChange = (date: Date | null) => {
+    if (date) {
+      setStartDate(date);
+    }
+  };
+
+  const handleEndDateChange = (date: Date | null) => {
+    if (date) {
+      setEndDate(date);
+    }
+  };
+
   if (loading) {
     return (
       <div className="App">
@@ -79,6 +156,8 @@ function App() {
       </div>
     );
   }
+
+  const groupedEvents = groupByTag ? groupEventsByTag(events) : null;
 
   return (
     <div className="App">
@@ -96,7 +175,44 @@ function App() {
           </div>
         ) : (
           <>
-            <h2>Calendar Events</h2>
+            <div className="controls">
+              <h2>Calendar Events</h2>
+              <div className="control-group">
+                <div className="date-range">
+                  <DatePicker
+                    selected={startDate}
+                    onChange={handleStartDateChange}
+                    selectsStart
+                    startDate={startDate}
+                    endDate={endDate}
+                    maxDate={endDate}
+                    className="date-picker"
+                    placeholderText="Start Date"
+                  />
+                  <span>to</span>
+                  <DatePicker
+                    selected={endDate}
+                    onChange={handleEndDateChange}
+                    selectsEnd
+                    startDate={startDate}
+                    endDate={endDate}
+                    minDate={startDate}
+                    maxDate={new Date()}
+                    className="date-picker"
+                    placeholderText="End Date"
+                  />
+                </div>
+                <label className="group-toggle">
+                  <input
+                    type="checkbox"
+                    checked={groupByTag}
+                    onChange={(e) => setGroupByTag(e.target.checked)}
+                  />
+                  Group by tag
+                </label>
+              </div>
+            </div>
+            
             {availableTags.length > 0 && (
               <div className="tag-filter">
                 <h3>Project Tags</h3>
@@ -113,37 +229,30 @@ function App() {
                 </div>
               </div>
             )}
+            
             {error ? (
               <div className="error">{error}</div>
             ) : events.length === 0 ? (
               <p>No events found in your calendar.</p>
+            ) : groupByTag ? (
+              <div className="grouped-events">
+                {Object.entries(groupedEvents!).map(([tag, { events, totalDuration }]) => (
+                  <div key={tag} className="tag-group">
+                    <h3 className="tag-header">
+                      #{tag}
+                      <span className="total-duration">
+                        Total: {formatDuration(totalDuration)}
+                      </span>
+                    </h3>
+                    <ul className="events">
+                      {events.map(renderEvent)}
+                    </ul>
+                  </div>
+                ))}
+              </div>
             ) : (
               <ul className="events">
-                {events.map((event) => (
-                  <li key={event.id} className="event">
-                    <h3>{event.summary}</h3>
-                    {event.description && <p>{event.description}</p>}
-                    {event.projectTags && event.projectTags.length > 0 && (
-                      <div className="tags">
-                        {event.projectTags.map(({ tag, description }) => (
-                          <span key={tag} className="tag">
-                            #{tag}
-                            {description && <span className="tag-description">: {description}</span>}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <p className="time">
-                      {new Date(event.start.dateTime).toLocaleString()} -{' '}
-                      {new Date(event.end.dateTime).toLocaleString()}
-                    </p>
-                    {event.duration && (
-                      <p className="duration">
-                        Duration: {Math.floor(event.duration / 60)}h {event.duration % 60}m
-                      </p>
-                    )}
-                  </li>
-                ))}
+                {events.map(renderEvent)}
               </ul>
             )}
           </>

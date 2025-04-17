@@ -112,21 +112,25 @@ app.get('/api/events', async (req: Request, res: Response) => {
     oauth2Client.setCredentials(tokens);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
     
-    // Calculate timeMin to include events from 7 days ago
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Get date range from query parameters or use default (7 days ago)
+    const startDate = req.query.startDate ? new Date(req.query.startDate as string) : (() => {
+      const date = new Date();
+      date.setDate(date.getDate() - 7);
+      return date;
+    })();
     
-    console.log('Fetching events since:', sevenDaysAgo.toISOString());
+    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
+    
+    console.log('Fetching events from:', startDate.toISOString(), 'to:', endDate.toISOString());
     
     const response = await calendar.events.list({
       calendarId: 'primary',
-      timeMin: sevenDaysAgo.toISOString(),
-      maxResults: 100, // Increased to show more events
+      timeMin: startDate.toISOString(),
+      timeMax: endDate.toISOString(),
+      maxResults: 100,
       singleEvents: true,
       orderBy: 'startTime',
     });
-
-    console.log('Total events fetched:', response.data.items?.length || 0);
 
     // Extract tags from event summaries and store events in MongoDB
     const events = response.data.items?.map(event => {
