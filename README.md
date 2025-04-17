@@ -21,10 +21,16 @@ Create a `.env` file in the root directory with the following variables:
 
 ```
 PORT=3000
+ENCRYPTION_KEY=your_32_character_encryption_key  # Must be exactly 32 characters for AES-256
 GOOGLE_CLIENT_ID=your_client_id
 GOOGLE_CLIENT_SECRET=your_client_secret
 GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
 MONGODB_URI=mongodb://mongodb:27017/timetracking
+```
+
+To generate a secure encryption key, you can use:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 ## Setup with Docker

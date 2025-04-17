@@ -4,8 +4,32 @@ import dotenv from 'dotenv';
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { ParsedQs } from 'qs';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
+
+// Check required environment variables
+const requiredEnvVars = [
+  'ENCRYPTION_KEY',
+  'MONGODB_URI',
+  'DEV_GOOGLE_CLIENT_ID',
+  'DEV_GOOGLE_CLIENT_SECRET',
+  'DEV_GOOGLE_REDIRECT_URI'
+];
+
+if (process.env.NODE_ENV === 'production') {
+  requiredEnvVars.push(
+    'PROD_GOOGLE_CLIENT_ID',
+    'PROD_GOOGLE_CLIENT_SECRET',
+    'PROD_GOOGLE_REDIRECT_URI'
+  );
+}
+
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+}
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -17,6 +41,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+app.use(cookieParser());
 
 // Google Calendar API setup
 const oauth2Client = new OAuth2Client(
