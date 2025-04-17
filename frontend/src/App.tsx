@@ -3,6 +3,7 @@ import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './App.css';
+import WeeklyReport from './components/WeeklyReport.tsx';
 
 // Configure axios to include credentials
 axios.defaults.withCredentials = true;
@@ -89,15 +90,16 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [groupByTag, setGroupByTag] = useState(true);
   const [startDate, setStartDate] = useState<Date>(() => {
     const date = new Date();
-    date.setDate(date.getDate() - 7); // Default to 7 days ago
+    date.setDate(date.getDate() - 7);
     return date;
   });
   const [endDate, setEndDate] = useState<Date>(new Date());
+  const [showReport, setShowReport] = useState(false);
 
   const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
@@ -121,7 +123,7 @@ function App() {
     const fetchEvents = async () => {
       try {
         const params = {
-          ...(selectedTag && { projectTag: selectedTag }),
+          ...(selectedTags.length > 0 ? { projectTags: selectedTags } : {}),
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
         };
@@ -146,14 +148,21 @@ function App() {
     };
 
     checkAuthStatus();
-  }, [apiUrl, selectedTag, startDate, endDate]);
+  }, [apiUrl, selectedTags, startDate, endDate]);
 
   const handleGoogleAuth = () => {
     window.location.href = `${apiUrl}/auth/google`;
   };
 
   const handleTagClick = (tag: string) => {
-    setSelectedTag(selectedTag === tag ? null : tag);
+    setSelectedTags(prev => {
+      const isSelected = prev.includes(tag);
+      if (isSelected) {
+        return prev.filter(t => t !== tag);
+      } else {
+        return [...prev, tag];
+      }
+    });
   };
 
   const groupEventsByTag = (events: Event[]): GroupedEvents => {
@@ -202,6 +211,17 @@ function App() {
     setStartDate(start);
     setEndDate(end);
   };
+
+  if (showReport) {
+    return (
+      <WeeklyReport
+        events={events}
+        selectedTags={selectedTags}
+        startDate={startDate}
+        endDate={endDate}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -264,14 +284,24 @@ function App() {
                     This Week
                   </button>
                 </div>
-                <label className="group-toggle">
-                  <input
-                    type="checkbox"
-                    checked={groupByTag}
-                    onChange={(e) => setGroupByTag(e.target.checked)}
-                  />
-                  Group by tag
-                </label>
+                <div className="view-controls">
+                  <label className="group-toggle">
+                    <input
+                      type="checkbox"
+                      checked={groupByTag}
+                      onChange={(e) => setGroupByTag(e.target.checked)}
+                    />
+                    Group by tag
+                  </label>
+                  {selectedTags.length > 0 && (
+                    <button
+                      className="generate-report-button"
+                      onClick={() => setShowReport(true)}
+                    >
+                      Generate Report
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             
@@ -282,7 +312,7 @@ function App() {
                   {availableTags.map(tag => (
                     <button
                       key={tag}
-                      className={`tag ${selectedTag === tag ? 'active' : ''}`}
+                      className={`tag ${selectedTags.includes(tag) ? 'active' : ''}`}
                       onClick={() => handleTagClick(tag)}
                     >
                       #{tag}

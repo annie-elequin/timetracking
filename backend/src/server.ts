@@ -69,10 +69,7 @@ interface AuthCallbackQuery extends ParsedQs {
 
 // Routes
 app.get('/auth/status', (req: Request, res: Response) => {
-  console.log('Checking auth status');
-  console.log('All cookies received:', req.cookies);
   const authTokens = req.cookies.auth_tokens;
-  console.log('Auth tokens in cookie:', authTokens ? 'present' : 'missing');
   res.json({ isAuthenticated: !!authTokens });
 });
 
@@ -87,19 +84,11 @@ app.get('/auth/google', (_req: Request<EmptyParams, any, EmptyBody, EmptyQuery>,
 
 app.get('/auth/google/callback', async (req: Request<EmptyParams, any, EmptyBody, AuthCallbackQuery>, res: Response) => {
   try {
-    console.log('Received callback from Google');
     const { code } = req.query;
     if (!code || typeof code !== 'string') {
-      console.error('No code received in callback');
       throw new Error('Invalid authorization code');
     }
-    console.log('Getting tokens from Google');
     const { tokens: newTokens } = await oauth2Client.getToken(code);
-    console.log('Received tokens:', { 
-      access_token: newTokens.access_token ? 'present' : 'missing',
-      refresh_token: newTokens.refresh_token ? 'present' : 'missing',
-      expiry_date: newTokens.expiry_date
-    });
     
     // Store tokens in an HTTP-only cookie that expires in 7 days
     const cookieOptions = {
@@ -110,9 +99,7 @@ app.get('/auth/google/callback', async (req: Request<EmptyParams, any, EmptyBody
       path: '/'
     };
     
-    console.log('Setting cookie with options:', cookieOptions);
     res.cookie('auth_tokens', JSON.stringify(newTokens), cookieOptions);
-    console.log('Cookie headers set:', res.getHeaders());
     
     // Add a small delay before redirect to ensure cookie is set
     setTimeout(() => {
@@ -130,14 +117,11 @@ app.get('/auth/google/callback', async (req: Request<EmptyParams, any, EmptyBody
 
 app.get('/api/events', async (req: Request, res: Response) => {
   try {
-    console.log('Fetching events');
     const authTokens = req.cookies.auth_tokens;
     if (!authTokens) {
-      console.log('No auth tokens found in cookie');
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    console.log('Parsing tokens from cookie');
     const tokens = JSON.parse(authTokens);
     oauth2Client.setCredentials(tokens);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
@@ -151,8 +135,6 @@ app.get('/api/events', async (req: Request, res: Response) => {
     
     const endDate = req.query.endDate ? new Date(req.query.endDate as string) : new Date();
     
-    console.log('Fetching events from:', startDate.toISOString(), 'to:', endDate.toISOString());
-    
     const response = await calendar.events.list({
       calendarId: 'primary',
       timeMin: startDate.toISOString(),
@@ -165,7 +147,6 @@ app.get('/api/events', async (req: Request, res: Response) => {
     // Extract tags from event summaries and store events in MongoDB
     const events = response.data.items?.map(event => {
       const summary = event.summary || '';
-      console.log('Event:', summary);
       
       const tagRegex = /#(\w+)/g;  // Simplified regex to just capture hashtag words
       const matches = summary.match(tagRegex) || [];
@@ -179,8 +160,6 @@ app.get('/api/events', async (req: Request, res: Response) => {
       const endTime = new Date(event.end?.dateTime || event.end?.date || '');
       const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
 
-      console.log('Duration for event:', summary, durationMinutes, 'minutes');
-
       return {
         ...event,
         projectTags,
@@ -190,7 +169,6 @@ app.get('/api/events', async (req: Request, res: Response) => {
 
     // Filter to only include events that have hashtags
     const taggedEvents = events.filter(event => event.projectTags.length > 0);
-    console.log('Events with tags:', taggedEvents.length);
 
     // Store events in MongoDB
     await Promise.all(taggedEvents.map(event => 
@@ -223,9 +201,9 @@ app.get('/api/events/tags', async (_req: Request, res: Response) => {
     const tags = new Set<string>();
     
     events.forEach(event => {
-      const description = event.description || '';
+      const summary = event.summary || '';
       const tagRegex = /#(\w+)/g;
-      const matches = description.match(tagRegex) || [];
+      const matches = summary.match(tagRegex) || [];
       matches.forEach(tag => tags.add(tag.slice(1))); // Remove # from tag
     });
     
