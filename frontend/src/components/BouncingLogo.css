@@ -1,0 +1,164 @@
+.bouncing-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.bouncing-logo {
+  position: absolute;
+  width: 75px;
+  height: 75px;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.bouncing-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+  transition: transform 0.2s ease;
+}
+
+.bouncing-logo.hovered img {
+  animation: mirror 0.3s infinite alternate ease-in-out;
+}
+
+@keyframes mirror {
+  0% {
+    transform: scaleX(1) rotate(-5deg) scale(0.9);
+  }
+  50% {
+    transform: scaleX(0) rotate(0deg) scale(1.2);
+  }
+  100% {
+    transform: scaleX(-1) rotate(5deg) scale(0.9);
+  }
+}
+
+.confetti {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.confetti.circle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.confetti.square {
+  width: 8px;
+  height: 8px;
+}
+
+.confetti.triangle {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 12px solid;
+  background-color: transparent !important;
+}
+
+.confetti.star {
+  width: 0;
+  height: 0;
+  border-right: 8px solid transparent;
+  border-bottom: 5.6px solid;
+  border-left: 8px solid transparent;
+  transform-origin: center bottom;
+  background-color: transparent !important;
+}
+
+.confetti.star:before {
+  content: '';
+  position: absolute;
+  top: 1.6px;
+  left: -8px;
+  border-right: 8px solid transparent;
+  border-bottom: 5.6px solid;
+  border-left: 8px solid transparent;
+  transform: rotate(72deg);
+  transform-origin: center bottom;
+}
+
+.confetti.dog-image {
+  width: 200px;
+  height: 200px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.confetti-animation {
+  animation: confettiSpray var(--duration, 1s) ease-out forwards;
+}
+
+@keyframes confettiSpray {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.spiral-animation {
+  animation: spiralOut var(--duration, 2s) ease-in-out forwards;
+}
+
+@keyframes spiralOut {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(0.3);
+    opacity: 1;
+  }
+  100% {
+    transform: 
+      translate(var(--tx), var(--ty)) 
+      rotate(var(--final-rotation))
+      scale(0.1);
+    opacity: 0;
+  }
+}
+
+.confetti.joy-word {
+  font-family: 'Comic Sans MS', 'Chalkboard SE', cursive;
+  font-size: 48px;
+  font-weight: bold;
+  color: var(--color);
+  text-shadow: 
+    2px 2px 0 #000,
+    -2px -2px 0 #000,
+    2px -2px 0 #000,
+    -2px 2px 0 #000;
+  white-space: nowrap;
+  background-color: transparent !important;
+}
+
+.word-animation {
+  animation: wordFloat var(--duration, 3s) ease-out forwards;
+}
+
+@keyframes wordFloat {
+  0% {
+    transform: translate(0, 0) rotate(var(--tilt)) scale(0.2);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+    transform: translate(calc(var(--tx) * 0.2), calc(var(--ty) * 0.2)) rotate(var(--tilt)) scale(1);
+  }
+  100% {
+    transform: translate(var(--tx), var(--ty)) rotate(var(--tilt)) scale(0.5);
+    opacity: 0;
+  }
+} 

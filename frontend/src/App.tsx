@@ -4,6 +4,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './App.css';
 import WeeklyReport from './components/WeeklyReport.tsx';
+import BouncingLogo from './components/BouncingLogo.tsx';
 
 // Configure axios to include credentials
 axios.defaults.withCredentials = true;
@@ -235,6 +236,7 @@ function App() {
 
   return (
     <div className="App">
+      <BouncingLogo />
       <header>
         <h1>Time Tracking</h1>
         {!isAuthenticated && (
