@@ -207,4 +207,29 @@ button:hover {
 
 .react-datepicker__input-container input {
   cursor: pointer;
+}
+
+.date-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.this-week-button {
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.this-week-button:hover {
+  background-color: #357abd;
+}
+
+.this-week-button:active {
+  background-color: #2a5f96;
 } 

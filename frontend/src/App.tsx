@@ -38,6 +38,52 @@ function formatDuration(minutes: number): string {
   return `${hours}h ${mins}m`;
 }
 
+function formatEventDateTime(start: string, end: string): string {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  
+  const isSameDay = startDate.toDateString() === endDate.toDateString();
+  
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', { 
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true 
+    }).toLowerCase();
+  };
+  
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      month: 'long',
+      day: 'numeric',
+      year: startDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+    });
+  };
+
+  if (isSameDay) {
+    return `${formatDate(startDate)}, ${formatTime(startDate)} to ${formatTime(endDate)}`;
+  } else {
+    return `${formatDate(startDate)} at ${formatTime(startDate)} to ${formatDate(endDate)} at ${formatTime(endDate)}`;
+  }
+}
+
+function getWeekRange(): { start: Date; end: Date } {
+  const now = new Date();
+  const currentDay = now.getDay(); // 0 = Sunday, 6 = Saturday
+  
+  // Calculate start of week (Sunday)
+  const start = new Date(now);
+  start.setDate(now.getDate() - currentDay);
+  start.setHours(0, 0, 0, 0);
+  
+  // Calculate end of week (Saturday)
+  const end = new Date(now);
+  end.setDate(now.getDate() + (6 - currentDay));
+  end.setHours(23, 59, 59, 999);
+  
+  return { start, end };
+}
+
 function App() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,8 +174,7 @@ function App() {
       <h3>{event.summary}</h3>
       <div className="event-details">
         <p className="time">
-          {new Date(event.start.dateTime).toLocaleString()} -{' '}
-          {new Date(event.end.dateTime).toLocaleString()}
+          {formatEventDateTime(event.start.dateTime, event.end.dateTime)}
         </p>
         {event.duration && (
           <p className="duration">
@@ -150,6 +195,12 @@ function App() {
     if (date) {
       setEndDate(date);
     }
+  };
+
+  const setThisWeek = () => {
+    const { start, end } = getWeekRange();
+    setStartDate(start);
+    setEndDate(end);
   };
 
   if (loading) {
@@ -181,29 +232,37 @@ function App() {
             <div className="controls">
               <h2>Calendar Events</h2>
               <div className="control-group">
-                <div className="date-range">
-                  <DatePicker
-                    selected={startDate}
-                    onChange={handleStartDateChange}
-                    selectsStart
-                    startDate={startDate}
-                    endDate={endDate}
-                    maxDate={endDate}
-                    className="date-picker"
-                    placeholderText="Start Date"
-                  />
-                  <span>to</span>
-                  <DatePicker
-                    selected={endDate}
-                    onChange={handleEndDateChange}
-                    selectsEnd
-                    startDate={startDate}
-                    endDate={endDate}
-                    minDate={startDate}
-                    maxDate={new Date()}
-                    className="date-picker"
-                    placeholderText="End Date"
-                  />
+                <div className="date-controls">
+                  <div className="date-range">
+                    <DatePicker
+                      selected={startDate}
+                      onChange={handleStartDateChange}
+                      selectsStart
+                      startDate={startDate}
+                      endDate={endDate}
+                      maxDate={endDate}
+                      className="date-picker"
+                      placeholderText="Start Date"
+                    />
+                    <span>to</span>
+                    <DatePicker
+                      selected={endDate}
+                      onChange={handleEndDateChange}
+                      selectsEnd
+                      startDate={startDate}
+                      endDate={endDate}
+                      minDate={startDate}
+                      maxDate={new Date()}
+                      className="date-picker"
+                      placeholderText="End Date"
+                    />
+                  </div>
+                  <button 
+                    className="this-week-button"
+                    onClick={setThisWeek}
+                  >
+                    This Week
+                  </button>
                 </div>
                 <label className="group-toggle">
                   <input
