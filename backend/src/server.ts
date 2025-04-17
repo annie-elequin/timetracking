@@ -45,7 +45,8 @@ const isProduction = process.env.NODE_ENV === 'production';
 // Middleware
 app.use(cors({
   origin: isProduction ? 'https://timetracking.elequin.io' : 'http://localhost:3001',
-  credentials: true
+  credentials: true,
+  exposedHeaders: ['set-cookie']
 }));
 app.use(express.json());
 app.use(cookieParser());
@@ -57,9 +58,6 @@ const oauth2Client = new OAuth2Client(
   isProduction ? process.env.PROD_GOOGLE_REDIRECT_URI : process.env.DEV_GOOGLE_REDIRECT_URI
 );
 
-// Store tokens in memory (for development)
-let tokens: any = null;
-
 // Type definitions for route parameters
 type EmptyParams = Record<string, never>;
 type EmptyBody = Record<string, never>;
@@ -70,13 +68,18 @@ interface AuthCallbackQuery extends ParsedQs {
 }
 
 // Routes
-app.get('/auth/status', (_req: Request<EmptyParams, any, EmptyBody, EmptyQuery>, res: Response) => {
-  res.json({ isAuthenticated: !!tokens });
+app.get('/auth/status', (req: Request, res: Response) => {
+  console.log('Checking auth status');
+  console.log('All cookies received:', req.cookies);
+  const authTokens = req.cookies.auth_tokens;
+  console.log('Auth tokens in cookie:', authTokens ? 'present' : 'missing');
+  res.json({ isAuthenticated: !!authTokens });
 });
 
 app.get('/auth/google', (_req: Request<EmptyParams, any, EmptyBody, EmptyQuery>, res: Response) => {
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
+    prompt: 'consent',
     scope: ['https://www.googleapis.com/auth/calendar.readonly']
   });
   res.redirect(url);
@@ -84,19 +87,41 @@ app.get('/auth/google', (_req: Request<EmptyParams, any, EmptyBody, EmptyQuery>,
 
 app.get('/auth/google/callback', async (req: Request<EmptyParams, any, EmptyBody, AuthCallbackQuery>, res: Response) => {
   try {
+    console.log('Received callback from Google');
     const { code } = req.query;
     if (!code || typeof code !== 'string') {
+      console.error('No code received in callback');
       throw new Error('Invalid authorization code');
     }
+    console.log('Getting tokens from Google');
     const { tokens: newTokens } = await oauth2Client.getToken(code);
-    tokens = newTokens;
-    oauth2Client.setCredentials(tokens);
+    console.log('Received tokens:', { 
+      access_token: newTokens.access_token ? 'present' : 'missing',
+      refresh_token: newTokens.refresh_token ? 'present' : 'missing',
+      expiry_date: newTokens.expiry_date
+    });
     
-    if (isProduction) {
-      res.redirect('https://timetracking.elequin.io');
-    } else {
-      res.redirect('http://localhost:3001');
-    }
+    // Store tokens in an HTTP-only cookie that expires in 7 days
+    const cookieOptions = {
+      httpOnly: true,
+      secure: false, // Set to false for local development
+      sameSite: 'lax' as const,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    };
+    
+    console.log('Setting cookie with options:', cookieOptions);
+    res.cookie('auth_tokens', JSON.stringify(newTokens), cookieOptions);
+    console.log('Cookie headers set:', res.getHeaders());
+    
+    // Add a small delay before redirect to ensure cookie is set
+    setTimeout(() => {
+      if (isProduction) {
+        res.redirect('https://timetracking.elequin.io');
+      } else {
+        res.redirect('http://localhost:3001');
+      }
+    }, 100);
   } catch (error) {
     console.error('Error in auth callback:', error);
     res.status(500).json({ error: 'Authentication failed' });
@@ -105,10 +130,15 @@ app.get('/auth/google/callback', async (req: Request<EmptyParams, any, EmptyBody
 
 app.get('/api/events', async (req: Request, res: Response) => {
   try {
-    if (!tokens) {
+    console.log('Fetching events');
+    const authTokens = req.cookies.auth_tokens;
+    if (!authTokens) {
+      console.log('No auth tokens found in cookie');
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
+    console.log('Parsing tokens from cookie');
+    const tokens = JSON.parse(authTokens);
     oauth2Client.setCredentials(tokens);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
     
@@ -144,11 +174,17 @@ app.get('/api/events', async (req: Request, res: Response) => {
         description: ''     // We don't need descriptions since they're not in the summary
       }));
 
-      console.log('Found tags:', projectTags);
+      // Calculate duration in minutes
+      const startTime = new Date(event.start?.dateTime || event.start?.date || '');
+      const endTime = new Date(event.end?.dateTime || event.end?.date || '');
+      const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+
+      console.log('Duration for event:', summary, durationMinutes, 'minutes');
 
       return {
         ...event,
-        projectTags
+        projectTags,
+        duration: durationMinutes
       };
     }) || [];
 
@@ -166,7 +202,8 @@ app.get('/api/events', async (req: Request, res: Response) => {
           description: event.description,
           start: event.start?.dateTime || event.start?.date,
           end: event.end?.dateTime || event.end?.date,
-          projectTags: event.projectTags
+          projectTags: event.projectTags,
+          duration: event.duration
         },
         { upsert: true }
       )
