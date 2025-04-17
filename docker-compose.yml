@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
@@ -11,13 +9,13 @@ services:
       - PORT=3000
       - MONGODB_URI=mongodb://mongodb:27017/timetracking
       - NODE_ENV=${NODE_ENV:-development}
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - DEV_GOOGLE_CLIENT_ID=${DEV_GOOGLE_CLIENT_ID}
-      - DEV_GOOGLE_CLIENT_SECRET=${DEV_GOOGLE_CLIENT_SECRET}
-      - DEV_GOOGLE_REDIRECT_URI=${DEV_GOOGLE_REDIRECT_URI}
-      - PROD_GOOGLE_CLIENT_ID=${PROD_GOOGLE_CLIENT_ID}
-      - PROD_GOOGLE_CLIENT_SECRET=${PROD_GOOGLE_CLIENT_SECRET}
-      - PROD_GOOGLE_REDIRECT_URI=${PROD_GOOGLE_REDIRECT_URI}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-default_dev_key_32_chars_long_123}
+      - DEV_GOOGLE_CLIENT_ID=${DEV_GOOGLE_CLIENT_ID:-}
+      - DEV_GOOGLE_CLIENT_SECRET=${DEV_GOOGLE_CLIENT_SECRET:-}
+      - DEV_GOOGLE_REDIRECT_URI=${DEV_GOOGLE_REDIRECT_URI:-http://localhost:3000/auth/google/callback}
+      - PROD_GOOGLE_CLIENT_ID=${PROD_GOOGLE_CLIENT_ID:-}
+      - PROD_GOOGLE_CLIENT_SECRET=${PROD_GOOGLE_CLIENT_SECRET:-}
+      - PROD_GOOGLE_REDIRECT_URI=${PROD_GOOGLE_REDIRECT_URI:-https://your-domain.com/auth/google/callback}
     depends_on:
       - mongodb
     networks:

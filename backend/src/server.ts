@@ -5,6 +5,8 @@ import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { ParsedQs } from 'qs';
 import cookieParser from 'cookie-parser';
+import mongoose from 'mongoose';
+import { Event } from './models/Event';
 
 dotenv.config();
 
@@ -30,6 +32,11 @@ for (const envVar of requiredEnvVars) {
     throw new Error(`Missing required environment variable: ${envVar}`);
   }
 }
+
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI!)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch((error) => console.error('MongoDB connection error:', error));
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -96,7 +103,7 @@ app.get('/auth/google/callback', async (req: Request<EmptyParams, any, EmptyBody
   }
 });
 
-app.get('/api/events', async (_req: Request<EmptyParams, any, EmptyBody, EmptyQuery>, res: Response) => {
+app.get('/api/events', async (req: Request, res: Response) => {
   try {
     if (!tokens) {
       return res.status(401).json({ error: 'Not authenticated' });
@@ -104,17 +111,87 @@ app.get('/api/events', async (_req: Request<EmptyParams, any, EmptyBody, EmptyQu
 
     oauth2Client.setCredentials(tokens);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    
+    // Calculate timeMin to include events from 7 days ago
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    console.log('Fetching events since:', sevenDaysAgo.toISOString());
+    
     const response = await calendar.events.list({
       calendarId: 'primary',
-      timeMin: new Date().toISOString(),
-      maxResults: 10,
+      timeMin: sevenDaysAgo.toISOString(),
+      maxResults: 100, // Increased to show more events
       singleEvents: true,
       orderBy: 'startTime',
     });
-    res.json(response.data.items);
+
+    console.log('Total events fetched:', response.data.items?.length || 0);
+
+    // Extract tags from event summaries and store events in MongoDB
+    const events = response.data.items?.map(event => {
+      const summary = event.summary || '';
+      console.log('Event:', summary);
+      
+      const tagRegex = /#(\w+)/g;  // Simplified regex to just capture hashtag words
+      const matches = summary.match(tagRegex) || [];
+      const projectTags = matches.map(tag => ({
+        tag: tag.slice(1),  // Remove the # from the tag
+        description: ''     // We don't need descriptions since they're not in the summary
+      }));
+
+      console.log('Found tags:', projectTags);
+
+      return {
+        ...event,
+        projectTags
+      };
+    }) || [];
+
+    // Filter to only include events that have hashtags
+    const taggedEvents = events.filter(event => event.projectTags.length > 0);
+    console.log('Events with tags:', taggedEvents.length);
+
+    // Store events in MongoDB
+    await Promise.all(taggedEvents.map(event => 
+      Event.findOneAndUpdate(
+        { googleEventId: event.id },
+        {
+          googleEventId: event.id,
+          summary: event.summary,
+          description: event.description,
+          start: event.start?.dateTime || event.start?.date,
+          end: event.end?.dateTime || event.end?.date,
+          projectTags: event.projectTags
+        },
+        { upsert: true }
+      )
+    ));
+
+    res.json(taggedEvents);
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).json({ error: 'Failed to fetch events' });
+  }
+});
+
+// Add tags endpoint
+app.get('/api/events/tags', async (_req: Request, res: Response) => {
+  try {
+    const events = await Event.find({});
+    const tags = new Set<string>();
+    
+    events.forEach(event => {
+      const description = event.description || '';
+      const tagRegex = /#(\w+)/g;
+      const matches = description.match(tagRegex) || [];
+      matches.forEach(tag => tags.add(tag.slice(1))); // Remove # from tag
+    });
+    
+    res.json(Array.from(tags));
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    res.status(500).json({ error: 'Failed to fetch tags' });
   }
 });
 

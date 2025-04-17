@@ -1,76 +1,92 @@
-# Time Tracking Application
+# Time Tracking App
 
-A Node.js application that reads events from Google Calendar and generates timesheets based on project tags.
+A time tracking application that integrates with Google Calendar.
 
-## Features
-
-- Read events from Google Calendar
-- Filter events by project tags (e.g., "#myProject")
-- Store events in MongoDB
-- Generate timesheets in multiple formats (coming soon)
-- Track time spent on different tasks
-
-## Prerequisites
-
-- Docker and Docker Compose
-- Google Cloud Platform account with Calendar API enabled
-
-## Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
+## Project Structure
 
 ```
-PORT=3000
-ENCRYPTION_KEY=your_32_character_encryption_key  # Must be exactly 32 characters for AES-256
-GOOGLE_CLIENT_ID=your_client_id
-GOOGLE_CLIENT_SECRET=your_client_secret
-GOOGLE_REDIRECT_URI=http://localhost:3000/auth/google/callback
-MONGODB_URI=mongodb://mongodb:27017/timetracking
+timetracking/
+├── backend/             # Backend Node.js application
+│   ├── src/            # Source code
+│   ├── Dockerfile      # Backend Docker configuration
+│   └── package.json    # Backend dependencies
+├── frontend/           # React frontend application
+│   ├── src/           # Source code
+│   ├── Dockerfile     # Frontend Docker configuration
+│   └── package.json   # Frontend dependencies
+└── docker-compose.yml # Docker compose configuration
 ```
-
-To generate a secure encryption key, you can use:
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-## Setup with Docker
-
-1. Set up Google Cloud Project:
-   - Create a new project in Google Cloud Console
-   - Enable the Google Calendar API
-   - Create OAuth 2.0 credentials
-   - Add the credentials to your `.env` file
-
-2. Build and start the containers:
-   ```bash
-   docker-compose up --build
-   ```
-
-3. Access the application:
-   - Frontend: http://localhost:3001
-   - Backend API: http://localhost:3000
 
 ## Development
 
-### Backend Development
+### Prerequisites
+
+- Node.js (v18 or later)
+- npm
+- Docker and Docker Compose (for containerized deployment)
+- MongoDB
+
+### Environment Variables
+
+Copy the example environment file and update it with your settings:
+
 ```bash
-cd backend
-npm install
+cp .env.example .env
+```
+
+Update the `.env` file with your Google OAuth credentials and other configuration. The environment variables are used by both the Docker setup and local development.
+
+### Installation
+
+1. Install dependencies for both backend and frontend:
+
+```bash
+npm run install:all
+```
+
+### Running the Application
+
+#### Development Mode
+
+To run both backend and frontend in development mode:
+
+```bash
 npm run dev
 ```
 
-### Frontend Development
+Or run them separately:
+
 ```bash
-cd frontend
-npm install
-npm start
+npm run dev:backend
+npm run dev:frontend
 ```
+
+#### Using Docker
+
+To run the entire application using Docker:
+
+```bash
+docker-compose up --build
+```
+
+The application will be available at:
+- Frontend: http://localhost:3001
+- Backend API: http://localhost:3000
+- MongoDB: localhost:27017
+
+## Features
+
+- Google Calendar Integration
+- Project Tag Filtering
+- Time Duration Tracking
+- MongoDB Storage
 
 ## API Endpoints
 
-- `GET /auth/google` - Start Google OAuth flow
-- `GET /auth/google/callback` - Google OAuth callback
-- `GET /api/events` - Get calendar events
+- `GET /api/events`: Get calendar events
+- `GET /api/events/tags`: Get all project tags
+- `GET /auth/google`: Initiate Google OAuth flow
+- `GET /auth/google/callback`: Google OAuth callback
 
 ## Docker Services
 

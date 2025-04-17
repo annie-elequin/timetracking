@@ -1,16 +1,26 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+interface ProjectTag {
+  tag: string;
+  description: string;
+}
+
 export interface IEvent extends Document {
   googleEventId: string;
   summary: string;
   description?: string;
   start: Date;
   end: Date;
-  projectTag?: string;
+  projectTags: ProjectTag[];
   duration: number; // in minutes
   createdAt: Date;
   updatedAt: Date;
 }
+
+const ProjectTagSchema = new Schema<ProjectTag>({
+  tag: { type: String, required: true },
+  description: { type: String, default: '' }
+});
 
 const EventSchema = new Schema<IEvent>(
   {
@@ -19,7 +29,7 @@ const EventSchema = new Schema<IEvent>(
     description: String,
     start: { type: Date, required: true },
     end: { type: Date, required: true },
-    projectTag: String,
+    projectTags: [ProjectTagSchema],
     duration: { type: Number, required: true }, // stored in minutes
   },
   {

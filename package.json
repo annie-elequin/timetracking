@@ -1,36 +1,15 @@
 {
-  "name": "timetracking",
+  "name": "timetracking-root",
   "version": "1.0.0",
-  "description": "A time tracking application that reads events from Google Calendar",
-  "main": "dist/server.js",
+  "description": "Root package for timetracking application",
   "scripts": {
-    "start": "node dist/server.js",
-    "dev": "ts-node-dev --respawn src/server.ts",
-    "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [
-    "time-tracking",
-    "google-calendar",
-    "timesheet"
-  ],
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "@google-cloud/local-auth": "^2.1.0",
-    "@types/cookie-parser": "^1.4.8",
-    "@types/cors": "^2.8.13",
-    "@types/express": "^4.17.17",
-    "@types/node": "^20.4.2",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "googleapis": "^118.0.0",
-    "mongoose": "^7.4.3",
-    "typescript": "^5.1.6"
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build": "cd backend && npm run build && cd ../frontend && npm run build"
   },
   "devDependencies": {
-    "ts-node-dev": "^2.0.0"
+    "concurrently": "^8.2.2"
   }
-}
+} 
