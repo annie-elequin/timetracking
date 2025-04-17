@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/timetracking
+      - NODE_ENV=${NODE_ENV:-development}
+      - DEV_GOOGLE_CLIENT_ID=${DEV_GOOGLE_CLIENT_ID}
+      - DEV_GOOGLE_CLIENT_SECRET=${DEV_GOOGLE_CLIENT_SECRET}
+      - DEV_GOOGLE_REDIRECT_URI=${DEV_GOOGLE_REDIRECT_URI}
+      - PROD_GOOGLE_CLIENT_ID=${PROD_GOOGLE_CLIENT_ID}
+      - PROD_GOOGLE_CLIENT_SECRET=${PROD_GOOGLE_CLIENT_SECRET}
+      - PROD_GOOGLE_REDIRECT_URI=${PROD_GOOGLE_REDIRECT_URI}
+    depends_on:
+      - mongodb
+    networks:
+      - timetracking-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - REACT_APP_API_URL=http://localhost:3000
+    depends_on:
+      - backend
+    networks:
+      - timetracking-network
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - timetracking-network
+    restart: unless-stopped
+
+networks:
+  timetracking-network:
+    driver: bridge
+
+volumes:
+  mongodb_data: 
