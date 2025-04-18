@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './BouncingLogo.css';
 
-const SHAPES = ['circle', 'square', 'triangle', 'star', 'dog-image', 'joy-word'];
+const SHAPES = ['circle', 'square', 'triangle', 'star', 'joy-word'];
 
 const JOY_WORDS = [
   // Modern/Internet Era
@@ -26,7 +26,11 @@ const JOY_WORDS = [
   'whoosh', 'zoom', 'zing', 'bam', 'kapow', 'boom', 'pew pew', 'swoosh', 'vroom'
 ];
 
-const BouncingLogo: React.FC = () => {
+interface BouncingLogoProps {
+  isAuthenticated: boolean;
+}
+
+const BouncingLogo: React.FC<BouncingLogoProps> = ({ isAuthenticated }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [velocity, setVelocity] = useState({ x: 4, y: 4 });
   const [isHovered, setIsHovered] = useState(false);
@@ -42,7 +46,6 @@ const BouncingLogo: React.FC = () => {
     ty: number;
     tilt?: number;
     text?: string;
-    finalRotation?: number;
   }>>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const logoRef = useRef<HTMLDivElement>(null);
@@ -156,27 +159,11 @@ const BouncingLogo: React.FC = () => {
         angle: Math.random() * 360,
         scale: 0.5 + Math.random(),
         speed: 0.8 + Math.random() * 0.4,
-        shape: SHAPES.slice(0, -2)[Math.floor(Math.random() * (SHAPES.length - 2))],
+        shape: SHAPES.slice(0, -1)[Math.floor(Math.random() * (SHAPES.length - 1))],
         tx,
         ty
       };
     });
-
-    // Create one special spiraling dog
-    const baseAngle = Math.random() * Math.PI * 2;
-    const baseVelocity = 150 + Math.random() * 250;
-    const spiralDog = {
-      x: position.x + (Math.random() * 150),
-      y: position.y + (Math.random() * 150),
-      color: 'transparent',
-      angle: Math.random() * 360,
-      scale: 0.15,
-      speed: 4,
-      shape: 'dog-image',
-      tx: Math.cos(baseAngle) * baseVelocity * (1 + Math.random() * 0.5),
-      ty: Math.sin(baseAngle) * baseVelocity * (1 + Math.random() * 0.5),
-      finalRotation: 720 + Math.random() * 720
-    };
 
     // Create one special word
     const wordAngle = Math.random() * Math.PI * 0.5 - Math.PI * 0.25; // -45 to +45 degrees
@@ -196,9 +183,11 @@ const BouncingLogo: React.FC = () => {
     };
 
     // Keep only regular confetti from before plus the new ones
-    const oldConfetti = confetti.filter(p => p.shape !== 'dog-image' && p.shape !== 'joy-word');
-    setConfetti([...oldConfetti.slice(-300), ...regularConfetti, spiralDog, joyWord]);
+    const oldConfetti = confetti.filter(p => p.shape !== 'joy-word');
+    setConfetti([...oldConfetti.slice(-300), ...regularConfetti, joyWord]);
   };
+
+  if (!isAuthenticated) return null;
 
   return (
     <div ref={containerRef} className="bouncing-container">
@@ -218,9 +207,7 @@ const BouncingLogo: React.FC = () => {
         <div
           key={`${index}-${particle.x}-${particle.y}`}
           className={`confetti ${particle.shape} ${
-            particle.shape === 'dog-image' ? 'spiral-animation' : 
-            particle.shape === 'joy-word' ? 'word-animation' : 
-            'confetti-animation'
+            particle.shape === 'joy-word' ? 'word-animation' : 'confetti-animation'
           }`}
           style={{
             left: particle.x,
@@ -232,8 +219,7 @@ const BouncingLogo: React.FC = () => {
             '--tx': `${particle.tx}px`,
             '--ty': `${particle.ty}px`,
             '--tilt': particle.tilt ? `${particle.tilt}deg` : undefined,
-            '--final-rotation': particle.finalRotation ? `${particle.finalRotation}deg` : undefined,
-            backgroundImage: particle.shape === 'dog-image' ? 'url(/dog.png)' : 'none',
+            backgroundImage: 'none',
             ...(particle.shape === 'joy-word' ? { '--color': particle.color } : {}),
           } as React.CSSProperties}
         >

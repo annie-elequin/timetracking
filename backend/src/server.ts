@@ -7,6 +7,7 @@ import { ParsedQs } from 'qs';
 import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import { Event } from './models/Event';
+import { initAuthRoutes } from './routes/auth';
 
 dotenv.config();
 
@@ -57,6 +58,9 @@ const oauth2Client = new OAuth2Client(
   isProduction ? process.env.PROD_GOOGLE_CLIENT_SECRET : process.env.DEV_GOOGLE_CLIENT_SECRET,
   isProduction ? process.env.PROD_GOOGLE_REDIRECT_URI : process.env.DEV_GOOGLE_REDIRECT_URI
 );
+
+// Initialize auth routes
+app.use('/auth', initAuthRoutes(oauth2Client, isProduction));
 
 // Type definitions for route parameters
 type EmptyParams = Record<string, never>;
@@ -117,13 +121,12 @@ app.get('/auth/google/callback', async (req: Request<EmptyParams, any, EmptyBody
 
 app.get('/api/events', async (req: Request, res: Response) => {
   try {
-    const authTokens = req.cookies.auth_tokens;
-    if (!authTokens) {
+    const accessToken = req.cookies.access_token;
+    if (!accessToken) {
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const tokens = JSON.parse(authTokens);
-    oauth2Client.setCredentials(tokens);
+    oauth2Client.setCredentials({ access_token: accessToken });
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
     
     // Get date range from query parameters or use default (7 days ago)

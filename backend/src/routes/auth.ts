@@ -6,6 +6,16 @@ import { v4 as uuidv4 } from 'uuid';
 import { CookieOptions } from 'express';
 import * as crypto from 'crypto';
 
+// Ensure encryption key is correct length (32 bytes for AES-256)
+const getEncryptionKey = () => {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key) {
+    throw new Error('ENCRYPTION_KEY is not defined');
+  }
+  // Use SHA-256 to get a 32-byte key
+  return crypto.createHash('sha256').update(key).digest();
+};
+
 const router = Router();
 
 export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean) => {
@@ -24,12 +34,15 @@ export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean
         return res.json({ isAuthenticated: false });
       }
 
-      // Verify the token is still valid
+      // Verify the token is still valid and get user info
       oauth2Client.setCredentials({ access_token: accessToken });
-      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-      await calendar.calendars.get({ calendarId: 'primary' });
+      const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+      const { data: userInfo } = await oauth2.userinfo.get();
       
-      res.json({ isAuthenticated: true });
+      res.json({ 
+        isAuthenticated: true,
+        email: userInfo.email
+      });
     } catch (error) {
       // Token is invalid or expired
       res.clearCookie('access_token');
@@ -43,8 +56,13 @@ export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean
     
     const url = oauth2Client.generateAuthUrl({
       access_type: 'offline',
-      scope: ['https://www.googleapis.com/auth/calendar.readonly'],
+      scope: [
+        'https://www.googleapis.com/auth/calendar.readonly',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile'
+      ],
       state: state,
+      prompt: 'consent'  // Always show consent screen to ensure we get a refresh token
     });
     res.redirect(url);
   });
@@ -56,66 +74,125 @@ export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean
 
       // Verify state to prevent CSRF
       if (!state || !storedState || state !== storedState) {
-        throw new Error('Invalid state parameter');
-      }
-
-      if (!code || typeof code !== 'string') {
-        throw new Error('Invalid authorization code');
-      }
-
-      const { tokens } = await oauth2Client.getToken(code);
-      if (!tokens.refresh_token) {
-        throw new Error('No refresh token received');
-      }
-
-      // Get user info from Google
-      oauth2Client.setCredentials(tokens);
-      const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
-      const { data: userInfo } = await oauth2.userinfo.get();
-
-      if (!userInfo.id || !userInfo.email || !userInfo.name) {
-        throw new Error('Missing user information from Google');
-      }
-
-      // Find or create user
-      let user = await User.findOne({ googleId: userInfo.id });
-      if (!user) {
-        user = new User({
-          googleId: userInfo.id,
-          email: userInfo.email,
-          name: userInfo.name,
-          encryptedRefreshToken: '', // Will be set below
+        console.error('State mismatch:', { receivedState: state, storedState });
+        return res.status(400).json({ 
+          error: 'Authentication failed',
+          details: 'Invalid state parameter',
+          debug: { receivedState: state, storedState }
         });
       }
 
-      // Encrypt and store refresh token
-      const iv = crypto.randomBytes(16);
-      const cipher = crypto.createCipheriv('aes-256-cbc', 
-        Buffer.from(process.env.ENCRYPTION_KEY!), 
-        iv
-      );
-      const encryptedToken = Buffer.concat([
-        iv,
-        cipher.update(tokens.refresh_token),
-        cipher.final()
-      ]).toString('hex');
-      
-      user.encryptedRefreshToken = encryptedToken;
-      await user.save();
+      if (!code || typeof code !== 'string') {
+        console.error('Invalid code:', code);
+        return res.status(400).json({ 
+          error: 'Authentication failed',
+          details: 'Invalid authorization code',
+          debug: { code }
+        });
+      }
 
-      // Set access token in cookie
-      res.cookie('access_token', tokens.access_token || '', cookieOptions);
-      res.clearCookie('oauth_state');
+      // Get tokens from Google
+      let tokens;
+      try {
+        const response = await oauth2Client.getToken(code);
+        tokens = response.tokens;
+      } catch (error) {
+        console.error('Error getting tokens from Google:', error);
+        return res.status(500).json({ 
+          error: 'Authentication failed',
+          details: 'Failed to get tokens from Google',
+          debug: error instanceof Error ? error.message : String(error)
+        });
+      }
 
-      // Redirect to frontend
-      if (isProduction) {
-        res.redirect('https://timetracking.elequin.io');
-      } else {
-        res.redirect('http://localhost:3001');
+      if (!tokens.refresh_token) {
+        console.error('No refresh token in response:', tokens);
+        return res.status(500).json({ 
+          error: 'Authentication failed',
+          details: 'No refresh token received',
+          debug: { tokens }
+        });
+      }
+
+      // Get user info from Google
+      let userInfo;
+      try {
+        oauth2Client.setCredentials(tokens);
+        const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+        const response = await oauth2.userinfo.get();
+        userInfo = response.data;
+      } catch (error) {
+        console.error('Error getting user info from Google:', error);
+        return res.status(500).json({ 
+          error: 'Authentication failed',
+          details: 'Failed to get user info from Google',
+          debug: error instanceof Error ? error.message : String(error)
+        });
+      }
+
+      if (!userInfo.id || !userInfo.email || !userInfo.name) {
+        console.error('Missing user info:', userInfo);
+        return res.status(500).json({ 
+          error: 'Authentication failed',
+          details: 'Missing user information from Google',
+          debug: { userInfo }
+        });
+      }
+
+      // Database operations
+      try {
+        // Find or create user
+        let user = await User.findOne({ googleId: userInfo.id });
+        if (!user) {
+          user = new User({
+            googleId: userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name,
+            encryptedRefreshToken: '', // Will be set below
+          });
+        }
+
+        // Encrypt and store refresh token
+        const iv = crypto.randomBytes(16);
+        const cipher = crypto.createCipheriv(
+          'aes-256-cbc', 
+          getEncryptionKey(),
+          iv
+        );
+        const encryptedToken = Buffer.concat([
+          iv,
+          cipher.update(tokens.refresh_token),
+          cipher.final()
+        ]).toString('hex');
+        
+        user.encryptedRefreshToken = encryptedToken;
+        await user.save();
+
+        // Set access token in cookie
+        res.cookie('access_token', tokens.access_token || '', cookieOptions);
+        res.clearCookie('oauth_state');
+
+        // Redirect to frontend
+        if (isProduction) {
+          res.redirect('https://timetracking.elequin.io');
+        } else {
+          res.redirect('http://localhost:3001');
+        }
+      } catch (error) {
+        console.error('Database or encryption error:', error);
+        return res.status(500).json({ 
+          error: 'Authentication failed',
+          details: 'Database or encryption error',
+          debug: error instanceof Error ? error.message : String(error)
+        });
       }
     } catch (error) {
-      console.error('Error in auth callback:', error);
-      res.status(500).json({ error: 'Authentication failed' });
+      console.error('Unexpected error in auth callback:', error);
+      res.status(500).json({ 
+        error: 'Authentication failed',
+        details: 'Unexpected error',
+        debug: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
@@ -137,8 +214,9 @@ export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean
       const iv = encryptedData.subarray(0, 16);
       const encryptedToken = encryptedData.subarray(16);
       
-      const decipher = crypto.createDecipheriv('aes-256-cbc', 
-        Buffer.from(process.env.ENCRYPTION_KEY!), 
+      const decipher = crypto.createDecipheriv(
+        'aes-256-cbc', 
+        getEncryptionKey(),
         iv
       );
       const refreshToken = Buffer.concat([
@@ -164,7 +242,10 @@ export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean
   });
 
   router.post('/logout', (req: Request, res: Response) => {
-    res.clearCookie('access_token');
+    // Clear all authentication-related cookies
+    res.clearCookie('access_token', cookieOptions);
+    res.clearCookie('oauth_state', cookieOptions);
+    res.clearCookie('auth_tokens', cookieOptions);
     res.json({ success: true });
   });
 

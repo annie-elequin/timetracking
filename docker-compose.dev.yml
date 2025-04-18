@@ -2,17 +2,20 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
     environment:
       - PORT=3000
       - MONGODB_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/timetracking?authSource=admin
-      - NODE_ENV=${NODE_ENV:-production}
+      - NODE_ENV=development
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - GOOGLE_CLIENT_ID=${PROD_GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${PROD_GOOGLE_CLIENT_SECRET}
-      - GOOGLE_REDIRECT_URI=${PROD_GOOGLE_REDIRECT_URI}
+      - GOOGLE_CLIENT_ID=${DEV_GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${DEV_GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${DEV_GOOGLE_REDIRECT_URI}
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
     depends_on:
       - mongodb
     networks:
@@ -27,13 +30,16 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3001:3001"
     environment:
       - PORT=3001
-      - REACT_APP_API_URL=https://timetracking.elequin.io
+      - REACT_APP_API_URL=http://localhost:3000
       - HOST=0.0.0.0
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - backend
     networks:
@@ -47,6 +53,8 @@ services:
 
   mongodb:
     image: mongo:latest
+    ports:
+      - "27017:27017"
     volumes:
       - mongodb_data:/data/db
     networks:

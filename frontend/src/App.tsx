@@ -5,6 +5,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import './App.css';
 import WeeklyReport from './components/WeeklyReport.tsx';
 import BouncingLogo from './components/BouncingLogo.tsx';
+import HelpModal from './components/HelpModal.tsx';
 
 // Configure axios to include credentials
 axios.defaults.withCredentials = true;
@@ -91,6 +92,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [groupByTag, setGroupByTag] = useState(true);
@@ -101,6 +103,7 @@ function App() {
   });
   const [endDate, setEndDate] = useState<Date>(new Date());
   const [showReport, setShowReport] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
 
@@ -109,6 +112,7 @@ function App() {
       try {
         const response = await axios.get(`${apiUrl}/auth/status`);
         setIsAuthenticated(response.data.isAuthenticated);
+        setUserEmail(response.data.email || null);
         if (response.data.isAuthenticated) {
           fetchEvents();
           fetchTags();
@@ -213,6 +217,19 @@ function App() {
     setEndDate(end);
   };
 
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${apiUrl}/auth/logout`);
+      setIsAuthenticated(false);
+      setUserEmail(null);
+      setEvents([]);
+      setAvailableTags([]);
+      setSelectedTags([]);
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
+  };
+
   if (showReport) {
     return (
       <WeeklyReport
@@ -236,12 +253,34 @@ function App() {
 
   return (
     <div className="App">
-      <BouncingLogo />
+      <BouncingLogo isAuthenticated={isAuthenticated} />
       <header>
-        <h1>Time Tracking</h1>
-        {!isAuthenticated && (
-          <button onClick={handleGoogleAuth}>Connect Google Calendar</button>
-        )}
+        <div className="header-left">
+          <h1>Time Tracking</h1>
+          {isAuthenticated && userEmail && (
+            <div className="user-email">{userEmail}</div>
+          )}
+        </div>
+        <div className="header-buttons">
+          {!isAuthenticated ? (
+            <button onClick={handleGoogleAuth}>Connect Google Calendar</button>
+          ) : (
+            <button 
+              className="logout-button"
+              onClick={handleLogout}
+              title="Logout"
+            >
+              Logout
+            </button>
+          )}
+          <button 
+            className="help-button"
+            onClick={() => setShowHelp(true)}
+            title="Help"
+          >
+            ?
+          </button>
+        </div>
       </header>
       <main>
         {!isAuthenticated ? (
@@ -352,6 +391,7 @@ function App() {
           </>
         )}
       </main>
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </div>
   );
 }
