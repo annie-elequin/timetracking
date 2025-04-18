@@ -15,6 +15,7 @@
   height: 75px;
   pointer-events: auto;
   cursor: pointer;
+  transform-origin: center center;
 }
 
 .bouncing-logo img {
@@ -23,6 +24,7 @@
   object-fit: contain;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
   transition: transform 0.2s ease;
+  transform-origin: center center;
 }
 
 .bouncing-logo.hovered img {
@@ -31,13 +33,13 @@
 
 @keyframes mirror {
   0% {
-    transform: scaleX(1) rotate(-5deg) scale(0.9);
+    transform: scaleX(1) rotate(-5deg);
   }
   50% {
-    transform: scaleX(0) rotate(0deg) scale(1.2);
+    transform: scaleX(0);
   }
   100% {
-    transform: scaleX(-1) rotate(5deg) scale(0.9);
+    transform: scaleX(-1) rotate(5deg);
   }
 }
 

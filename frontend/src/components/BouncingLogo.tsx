@@ -206,8 +206,8 @@ const BouncingLogo: React.FC = () => {
         ref={logoRef}
         className={`bouncing-logo ${isHovered ? 'hovered' : ''}`}
         style={{
-          transform: `translate(${position.x}px, ${position.y}px) ${isHovered ? 'scaleX(1)' : ''}`,
-          transition: isHovered ? 'none' : 'transform 0.2s ease' // Add smooth transition except during hover
+          transform: `translate(${position.x}px, ${position.y}px)`,
+          transition: isHovered ? 'none' : 'transform 0.2s ease'
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
