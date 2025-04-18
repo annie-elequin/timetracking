@@ -14,10 +14,7 @@ dotenv.config();
 // Check required environment variables
 const requiredEnvVars = [
   'ENCRYPTION_KEY',
-  'MONGODB_URI',
-  'DEV_GOOGLE_CLIENT_ID',
-  'DEV_GOOGLE_CLIENT_SECRET',
-  'DEV_GOOGLE_REDIRECT_URI'
+  'MONGODB_URI'
 ];
 
 if (process.env.NODE_ENV === 'production') {
@@ -25,6 +22,12 @@ if (process.env.NODE_ENV === 'production') {
     'PROD_GOOGLE_CLIENT_ID',
     'PROD_GOOGLE_CLIENT_SECRET',
     'PROD_GOOGLE_REDIRECT_URI'
+  );
+} else {
+  requiredEnvVars.push(
+    'DEV_GOOGLE_CLIENT_ID',
+    'DEV_GOOGLE_CLIENT_SECRET',
+    'DEV_GOOGLE_REDIRECT_URI'
   );
 }
 
