@@ -113,7 +113,7 @@ const BouncingLogo: React.FC<BouncingLogoProps> = ({ isAuthenticated }) => {
     setPosition({ x: newX, y: newY });
   };
 
-  const handleMouseEnter = () => {
+  const handleMouseEnter = (e: React.MouseEvent) => {
     setIsHovered(true);
     createConfetti();
     
@@ -196,7 +196,7 @@ const BouncingLogo: React.FC<BouncingLogoProps> = ({ isAuthenticated }) => {
         className={`bouncing-logo ${isHovered ? 'hovered' : ''}`}
         style={{
           transform: `translate(${position.x}px, ${position.y}px)`,
-          transition: isHovered ? 'none' : 'transform 0.2s ease'
+          transition: 'none'
         }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}

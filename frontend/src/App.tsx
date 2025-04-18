@@ -3,9 +3,9 @@ import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './App.css';
-import WeeklyReport from './components/WeeklyReport.tsx';
-import BouncingLogo from './components/BouncingLogo.tsx';
-import HelpModal from './components/HelpModal.tsx';
+import WeeklyReport from './components/WeeklyReport/WeeklyReport.tsx';
+import BouncingLogo from './components/BouncingLogo/BouncingLogo.tsx';
+import HelpModal from './components/HelpModal/HelpModal.tsx';
 
 // Configure axios to include credentials
 axios.defaults.withCredentials = true;
