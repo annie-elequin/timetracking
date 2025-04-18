@@ -19,7 +19,7 @@ services:
       - timetracking-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -33,13 +33,14 @@ services:
     environment:
       - PORT=3001
       - REACT_APP_API_URL=https://timetracking.elequin.io
+      - HOST=0.0.0.0
     depends_on:
       - backend
     networks:
       - timetracking-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001"]
       interval: 30s
       timeout: 10s
       retries: 3
