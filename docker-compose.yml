@@ -9,6 +9,7 @@ services:
       - stack.env
     environment:
       - NODE_ENV=production
+      - MONGODB_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/timetracking?authSource=admin
     depends_on:
       - mongodb
     networks:
@@ -46,6 +47,9 @@ services:
     networks:
       - timetracking-network
     restart: unless-stopped
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
     env_file:
       - stack.env
     healthcheck:
