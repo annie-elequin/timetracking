@@ -75,53 +75,6 @@ interface AuthCallbackQuery extends ParsedQs {
 }
 
 // Routes
-app.get('/auth/status', (req: Request, res: Response) => {
-  const authTokens = req.cookies.auth_tokens;
-  res.json({ isAuthenticated: !!authTokens });
-});
-
-app.get('/auth/google', (_req: Request<EmptyParams, any, EmptyBody, EmptyQuery>, res: Response) => {
-  const url = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    prompt: 'consent',
-    scope: ['https://www.googleapis.com/auth/calendar.readonly']
-  });
-  res.redirect(url);
-});
-
-app.get('/auth/google/callback', async (req: Request<EmptyParams, any, EmptyBody, AuthCallbackQuery>, res: Response) => {
-  try {
-    const { code } = req.query;
-    if (!code || typeof code !== 'string') {
-      throw new Error('Invalid authorization code');
-    }
-    const { tokens: newTokens } = await oauth2Client.getToken(code);
-    
-    // Store tokens in an HTTP-only cookie that expires in 7 days
-    const cookieOptions = {
-      httpOnly: true,
-      secure: false, // Set to false for local development
-      sameSite: 'lax' as const,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      path: '/'
-    };
-    
-    res.cookie('auth_tokens', JSON.stringify(newTokens), cookieOptions);
-    
-    // Add a small delay before redirect to ensure cookie is set
-    setTimeout(() => {
-      if (isProduction) {
-        res.redirect('https://timetracking.elequin.io');
-      } else {
-        res.redirect('http://localhost:3001');
-      }
-    }, 100);
-  } catch (error) {
-    console.error('Error in auth callback:', error);
-    res.status(500).json({ error: 'Authentication failed' });
-  }
-});
-
 app.get('/api/events', async (req: Request, res: Response) => {
   try {
     const accessToken = req.cookies.access_token;

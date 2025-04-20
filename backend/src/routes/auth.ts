@@ -25,6 +25,8 @@ export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean
     secure: isProduction,
     sameSite: isProduction ? 'none' : 'lax',
     maxAge: 60 * 60 * 1000, // 1 hour
+    path: '/',
+    domain: isProduction ? '.elequin.io' : undefined
   };
 
   router.get('/status', async (req: Request, res: Response) => {

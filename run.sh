@@ -32,6 +32,12 @@ if [[ "$ENV" != "dev" && "$ENV" != "prod" ]]; then
     exit 1
 fi
 
+# Copy production compose file if in prod mode
+if [[ "$ENV" == "prod" ]]; then
+    echo "Copying production compose file..."
+    cp docker-compose.prod.yml docker-compose.yml
+fi
+
 # Execute command
 case "$COMMAND" in
     "up")
