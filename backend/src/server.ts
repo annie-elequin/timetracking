@@ -173,6 +173,20 @@ app.get('/api/events/tags', async (_req: Request, res: Response) => {
   }
 });
 
+// Health check endpoint
+app.get('/health', async (_req: Request, res: Response) => {
+  try {
+    // Check MongoDB connection
+    if (mongoose.connection.readyState === 1) {
+      res.status(200).json({ status: 'healthy', mongodb: 'connected' });
+    } else {
+      res.status(503).json({ status: 'unhealthy', mongodb: 'disconnected' });
+    }
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port} in ${isProduction ? 'production' : 'development'} mode`);
 }); 
