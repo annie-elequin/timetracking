@@ -5,14 +5,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
-    environment:
-      - PORT=3000
-      - MONGODB_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/timetracking?authSource=admin
-      - NODE_ENV=production
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - GOOGLE_CLIENT_ID=${PROD_GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${PROD_GOOGLE_CLIENT_SECRET}
-      - GOOGLE_REDIRECT_URI=${PROD_GOOGLE_REDIRECT_URI}
+    env_file:
+      - stack.env
     depends_on:
       - mongodb
     networks:
@@ -30,10 +24,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3001:3001"
-    environment:
-      - PORT=3001
-      - REACT_APP_API_URL=https://timetracking.elequin.io
-      - HOST=0.0.0.0
+    env_file:
+      - stack.env
     depends_on:
       - backend
     networks:
@@ -52,9 +44,8 @@ services:
     networks:
       - timetracking-network
     restart: unless-stopped
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+    env_file:
+      - stack.env
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 10s
