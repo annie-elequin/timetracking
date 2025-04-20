@@ -391,6 +391,9 @@ function App() {
           </>
         )}
       </main>
+      <footer className="version-footer">
+        v1.0.1
+      </footer>
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </div>
   );
