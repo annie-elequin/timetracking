@@ -176,14 +176,39 @@ app.get('/api/events/tags', async (_req: Request, res: Response) => {
 // Health check endpoint
 app.get('/health', async (_req: Request, res: Response) => {
   try {
-    // Check MongoDB connection
-    if (mongoose.connection.readyState === 1) {
-      res.status(200).json({ status: 'healthy', mongodb: 'connected' });
-    } else {
-      res.status(503).json({ status: 'unhealthy', mongodb: 'disconnected' });
-    }
+    const health = {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: {
+        heapUsed: process.memoryUsage().heapUsed,
+        heapTotal: process.memoryUsage().heapTotal,
+        rss: process.memoryUsage().rss
+      },
+      services: {
+        mongodb: {
+          status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+          readyState: mongoose.connection.readyState
+        }
+      },
+      environment: {
+        nodeEnv: process.env.NODE_ENV,
+        requiredEnvVars: requiredEnvVars.every(varName => !!process.env[varName]) ? 'all present' : 'missing some'
+      }
+    };
+
+    // Check if any critical service is down
+    const isHealthy = health.services.mongodb.status === 'connected' && 
+                     health.environment.requiredEnvVars === 'all present';
+
+    res.status(isHealthy ? 200 : 503).json(health);
   } catch (error) {
-    res.status(500).json({ status: 'error', message: error instanceof Error ? error.message : 'Unknown error' });
+    res.status(500).json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.stack : undefined : undefined
+    });
   }
 });
 
