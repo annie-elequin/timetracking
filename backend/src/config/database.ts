@@ -10,9 +10,21 @@ export function getMongoDBUri(): string {
   const database = process.env.MONGODB_DATABASE || 'timetracking';
   const authSource = process.env.MONGODB_AUTH_SOURCE || 'admin';
 
+  console.log('MongoDB Connection Details:', {
+    username,
+    host,
+    port,
+    database,
+    authSource,
+    // Don't log the actual password
+    hasPassword: !!password
+  });
+
   if (!username || !password) {
     throw new Error('MongoDB credentials not found in environment variables');
   }
 
-  return `mongodb://${username}:${password}@${host}:${port}/${database}?authSource=${authSource}`;
+  const uri = `mongodb://${username}:${password}@${host}:${port}/${database}?authSource=${authSource}`;
+  console.log('MongoDB URI (without password):', uri.replace(password, '****'));
+  return uri;
 } 
