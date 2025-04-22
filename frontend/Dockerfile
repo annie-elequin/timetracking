@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY package*.json ./
 
+# Install ALL dependencies (including dev dependencies) for the build
 RUN npm install
 
 COPY . .
@@ -12,6 +13,7 @@ COPY . .
 ENV HOST=0.0.0.0
 ENV PORT=3001
 ENV NODE_ENV=production
+ENV CI=true
 
 # Build the application
 RUN npm run build
