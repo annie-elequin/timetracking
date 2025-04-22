@@ -41,9 +41,22 @@ for (const envVar of requiredEnvVars) {
 
 // MongoDB connection
 const mongoUri = getMongoDBUri();
-mongoose.connect(mongoUri)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch((error) => console.error('MongoDB connection error:', error));
+console.log('Attempting to connect to MongoDB...');
+mongoose.connect(mongoUri, {
+  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+  socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+})
+  .then(() => console.log('Connected to MongoDB successfully'))
+  .catch((error) => {
+    console.error('MongoDB connection error:', error);
+    console.error('Connection details:', {
+      uri: mongoUri.replace(/\/\/[^:]+:[^@]+@/, '//****:****@'), // Mask credentials
+      readyState: mongoose.connection.readyState,
+      host: mongoose.connection.host,
+      port: mongoose.connection.port,
+      name: mongoose.connection.name
+    });
+  });
 
 const app = express();
 const port = process.env.PORT || 3000;
