@@ -392,7 +392,7 @@ function App() {
         )}
       </main>
       <footer className="version-footer">
-        v1.0.1
+        v1.0.2
       </footer>
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </div>
