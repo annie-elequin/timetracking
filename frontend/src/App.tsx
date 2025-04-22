@@ -157,7 +157,9 @@ function App() {
   }, [apiUrl, selectedTags, startDate, endDate]);
 
   const handleGoogleAuth = () => {
-    window.location.replace(`${apiUrl}/auth/google`);
+    const authUrl = `${apiUrl}/auth/google`;
+    console.log('Redirecting to:', authUrl);
+    window.location.replace(authUrl);
   };
 
   const handleTagClick = (tag: string) => {

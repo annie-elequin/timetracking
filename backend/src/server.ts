@@ -73,6 +73,12 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Google Calendar API setup
+console.log('Initializing OAuth client with:', {
+  clientId: isProduction ? process.env.PROD_GOOGLE_CLIENT_ID : process.env.DEV_GOOGLE_CLIENT_ID,
+  redirectUri: isProduction ? process.env.PROD_GOOGLE_REDIRECT_URI : process.env.DEV_GOOGLE_REDIRECT_URI,
+  hasClientSecret: !!(isProduction ? process.env.PROD_GOOGLE_CLIENT_SECRET : process.env.DEV_GOOGLE_CLIENT_SECRET)
+});
+
 const oauth2Client = new OAuth2Client(
   isProduction ? process.env.PROD_GOOGLE_CLIENT_ID : process.env.DEV_GOOGLE_CLIENT_ID,
   isProduction ? process.env.PROD_GOOGLE_CLIENT_SECRET : process.env.DEV_GOOGLE_CLIENT_SECRET,

@@ -29,6 +29,12 @@ export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean
     domain: isProduction ? 'timetracking.elequin.io' : undefined
   };
 
+  // Test route to verify router is working
+  router.get('/test', (req: Request, res: Response) => {
+    console.log('Auth test route hit');
+    res.json({ message: 'Auth router is working' });
+  });
+
   router.get('/status', async (req: Request, res: Response) => {
     try {
       const accessToken = req.cookies.access_token;
@@ -54,8 +60,14 @@ export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean
 
   router.get('/google', (req: Request, res: Response) => {
     console.log('Received request to /auth/google');
+    console.log('Request headers:', req.headers);
+    console.log('Request cookies:', req.cookies);
+    
     const state = uuidv4(); // Generate a random state for CSRF protection
+    console.log('Generated state:', state);
+    
     res.cookie('oauth_state', state, cookieOptions);
+    console.log('Set oauth_state cookie with options:', cookieOptions);
     
     const url = oauth2Client.generateAuthUrl({
       access_type: 'offline',
@@ -67,7 +79,10 @@ export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean
       state: state,
       prompt: 'consent'  // Always show consent screen to ensure we get a refresh token
     });
-    console.log('Redirecting to Google OAuth URL:', url);
+    console.log('Generated Google OAuth URL:', url);
+    
+    // Set status code explicitly
+    res.status(302);
     res.redirect(url);
   });
 
