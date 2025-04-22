@@ -48,9 +48,10 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 // Middleware
 app.use(cors({
-  origin: isProduction ? 'https://timetracking.elequin.io' : 'http://localhost:3001',
+  origin: isProduction ? ['https://timetracking.elequin.io', 'https://accounts.google.com'] : 'http://localhost:3001',
   credentials: true,
-  exposedHeaders: ['set-cookie']
+  exposedHeaders: ['set-cookie'],
+  methods: ['GET', 'POST', 'OPTIONS']
 }));
 app.use(express.json());
 app.use(cookieParser());
