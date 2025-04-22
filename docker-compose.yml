@@ -6,9 +6,8 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - stack.env
-    environment:
-      - MONGODB_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/timetracking?authSource=admin
+      # - stack.env
+      - .env
     depends_on:
       - mongodb
     networks:
@@ -27,7 +26,8 @@ services:
     ports:
       - "3001:3001"
     env_file:
-      - stack.env
+      # - stack.env
+      - .env
     depends_on:
       - backend
     networks:
@@ -46,11 +46,9 @@ services:
     networks:
       - timetracking-network
     restart: unless-stopped
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
     env_file:
-      - stack.env
+      # - stack.env
+      - .env
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 10s

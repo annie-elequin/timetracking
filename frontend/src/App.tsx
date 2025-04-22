@@ -3,10 +3,10 @@ import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './App.css';
-import WeeklyReport from './components/WeeklyReport/WeeklyReport.tsx';
-import BouncingLogo from './components/BouncingLogo/BouncingLogo.tsx';
-import HelpModal from './components/HelpModal/HelpModal.tsx';
-import version from './version';
+import WeeklyReport from './components/WeeklyReport/WeeklyReport';
+import BouncingLogo from './components/BouncingLogo/BouncingLogo';
+import HelpModal from './components/HelpModal/HelpModal';
+import { VERSION } from './constants';
 
 // Configure axios to include credentials
 axios.defaults.withCredentials = true;
@@ -393,7 +393,7 @@ function App() {
         )}
       </main>
       <footer className="version-footer">
-        v{version}
+        v{VERSION}
       </footer>
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </div>

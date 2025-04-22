@@ -1,6 +1,6 @@
 import React from 'react';
-import { Event } from '../types';
 import './WeeklyReport.css';
+import { Event } from '../../types';
 
 interface WeeklyReportProps {
   events: Event[];

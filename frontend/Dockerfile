@@ -18,17 +18,14 @@ ENV CI=true
 # Build the application
 RUN npm run build
 
+# Generate version.txt in the build directory
+RUN echo $(node -p "require('./package.json').version") > build/version.txt
+
 # Production stage
 FROM nginx:alpine
 
-# Copy the build output
+# Copy the build output (including version.txt)
 COPY --from=builder /app/build /usr/share/nginx/html
-
-# Add version file
-COPY --from=builder /app/package.json /tmp/package.json
-RUN VERSION=$(node -p "require('/tmp/package.json').version") && \
-    echo $VERSION > /usr/share/nginx/html/version.txt && \
-    rm /tmp/package.json
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
