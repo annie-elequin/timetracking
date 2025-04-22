@@ -8,13 +8,15 @@ import cookieParser from 'cookie-parser';
 import mongoose from 'mongoose';
 import { Event } from './models/Event';
 import { initAuthRoutes } from './routes/auth';
+import { getMongoDBUri } from './config/database';
 
 dotenv.config();
 
 // Check required environment variables
 const requiredEnvVars = [
   'ENCRYPTION_KEY',
-  'MONGODB_URI'
+  'MONGO_ROOT_USERNAME',
+  'MONGO_ROOT_PASSWORD'
 ];
 
 if (process.env.NODE_ENV === 'production') {
@@ -38,7 +40,8 @@ for (const envVar of requiredEnvVars) {
 }
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI!)
+const mongoUri = getMongoDBUri();
+mongoose.connect(mongoUri)
   .then(() => console.log('Connected to MongoDB'))
   .catch((error) => console.error('MongoDB connection error:', error));
 

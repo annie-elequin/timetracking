@@ -1,21 +1,18 @@
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const connectDB = async (): Promise<void> => {
-  try {
-    const mongoURI = process.env.MONGODB_URI;
-    if (!mongoURI) {
-      throw new Error('MONGODB_URI is not defined in environment variables');
-    }
+export function getMongoDBUri(): string {
+  const username = process.env.MONGO_ROOT_USERNAME;
+  const password = process.env.MONGO_ROOT_PASSWORD;
+  const host = process.env.MONGODB_HOST || 'mongodb';  // default to 'mongodb' for docker service name
+  const port = process.env.MONGODB_PORT || '27017';    // default MongoDB port
+  const database = process.env.MONGODB_DATABASE || 'timetracking';
+  const authSource = process.env.MONGODB_AUTH_SOURCE || 'admin';
 
-    await mongoose.connect(mongoURI);
-    console.log('MongoDB connected successfully');
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    process.exit(1);
+  if (!username || !password) {
+    throw new Error('MongoDB credentials not found in environment variables');
   }
-};
 
-export default connectDB; 
+  return `mongodb://${username}:${password}@${host}:${port}/${database}?authSource=${authSource}`;
+} 
