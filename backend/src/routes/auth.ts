@@ -53,6 +53,7 @@ export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean
   });
 
   router.get('/google', (req: Request, res: Response) => {
+    console.log('Received request to /auth/google');
     const state = uuidv4(); // Generate a random state for CSRF protection
     res.cookie('oauth_state', state, cookieOptions);
     
@@ -66,6 +67,7 @@ export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean
       state: state,
       prompt: 'consent'  // Always show consent screen to ensure we get a refresh token
     });
+    console.log('Redirecting to Google OAuth URL:', url);
     res.redirect(url);
   });
 

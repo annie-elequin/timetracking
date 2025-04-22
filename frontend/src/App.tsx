@@ -157,7 +157,7 @@ function App() {
   }, [apiUrl, selectedTags, startDate, endDate]);
 
   const handleGoogleAuth = () => {
-    window.location.href = `${apiUrl}/auth/google`;
+    window.location.replace(`${apiUrl}/auth/google`);
   };
 
   const handleTagClick = (tag: string) => {
