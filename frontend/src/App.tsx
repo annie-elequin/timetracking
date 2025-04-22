@@ -6,6 +6,7 @@ import './App.css';
 import WeeklyReport from './components/WeeklyReport/WeeklyReport.tsx';
 import BouncingLogo from './components/BouncingLogo/BouncingLogo.tsx';
 import HelpModal from './components/HelpModal/HelpModal.tsx';
+import version from './version';
 
 // Configure axios to include credentials
 axios.defaults.withCredentials = true;
@@ -392,7 +393,7 @@ function App() {
         )}
       </main>
       <footer className="version-footer">
-        v1.0.2
+        v{version}
       </footer>
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
     </div>
