@@ -30,6 +30,10 @@ COPY --from=builder /app/build /usr/share/nginx/html
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Add a script to inject runtime environment variables
+COPY env.sh /usr/share/nginx/html/env.sh
+RUN chmod +x /usr/share/nginx/html/env.sh
+
 EXPOSE 3001
 
-CMD ["nginx", "-g", "daemon off;"] 
+CMD ["/bin/sh", "-c", "/usr/share/nginx/html/env.sh && nginx -g 'daemon off;'"] 

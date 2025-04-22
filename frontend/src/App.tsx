@@ -106,7 +106,7 @@ function App() {
   const [showReport, setShowReport] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+  const apiUrl = window.env?.REACT_APP_API_URL || 'http://localhost:3000';
 
   useEffect(() => {
     const checkAuthStatus = async () => {
