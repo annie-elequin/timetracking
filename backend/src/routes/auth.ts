@@ -26,7 +26,7 @@ export const initAuthRoutes = (oauth2Client: OAuth2Client, isProduction: boolean
     sameSite: 'lax',
     maxAge: 60 * 60 * 1000, // 1 hour
     path: '/',
-    domain: isProduction ? 'timetracking.elequin.io' : undefined
+    domain: isProduction ? 'timetracking-api.elequin.io' : undefined
   };
 
   // Test route to verify router is working
