@@ -94,71 +94,91 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isTestUser, setIsTestUser] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [groupByTag, setGroupByTag] = useState(true);
   const [startDate, setStartDate] = useState<Date>(() => {
-    const date = new Date();
-    date.setDate(date.getDate() - 7);
-    return date;
+    const { start } = getWeekRange();
+    return start;
   });
-  const [endDate, setEndDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date>(() => {
+    const { end } = getWeekRange();
+    return end;
+  });
   const [showReport, setShowReport] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
   const apiUrl = window.env?.REACT_APP_API_URL || 'http://localhost:3000';
 
   useEffect(() => {
-    const checkAuthStatus = async () => {
+    const checkAuthAndFetchData = async () => {
       try {
+        // Check for test token first
+        const cookies = document.cookie.split(';');
+        const testToken = cookies.find(cookie => cookie.trim().startsWith('access_token=test-token-123'));
+        
+        if (testToken) {
+          setIsTestUser(true);
+          setIsAuthenticated(true);
+          setUserEmail('test@example.com');
+          // Set mock data for test user
+          setEvents([
+            {
+              id: 'test1',
+              summary: 'Test Meeting 1',
+              start: { dateTime: new Date().toISOString() },
+              end: { dateTime: new Date(Date.now() + 3600000).toISOString() },
+              projectTags: [{ tag: 'test-project', description: 'Test Project' }],
+              duration: 60
+            },
+            {
+              id: 'test2',
+              summary: 'Test Meeting 2',
+              start: { dateTime: new Date(Date.now() - 7200000).toISOString() },
+              end: { dateTime: new Date(Date.now() - 3600000).toISOString() },
+              projectTags: [{ tag: 'demo', description: 'Demo Project' }],
+              duration: 120
+            }
+          ]);
+          setAvailableTags(['test-project', 'demo']);
+          setLoading(false);
+          return;
+        }
+
+        // Not a test user, check real auth status
         const response = await axios.get(`${apiUrl}/auth/status`);
+        setIsTestUser(false);
         setIsAuthenticated(response.data.isAuthenticated);
         setUserEmail(response.data.email || null);
+        
         if (response.data.isAuthenticated) {
-          fetchEvents();
-          fetchTags();
-        } else {
-          setLoading(false);
+          // Fetch real data
+          const params = {
+            ...(selectedTags.length > 0 ? { projectTags: selectedTags } : {}),
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+          };
+          const [eventsResponse, tagsResponse] = await Promise.all([
+            axios.get(`${apiUrl}/api/events`, { params }),
+            axios.get(`${apiUrl}/api/events/tags`)
+          ]);
+          setEvents(eventsResponse.data);
+          setAvailableTags(tagsResponse.data);
         }
       } catch (error) {
-        console.error('Error checking auth status:', error);
-        setLoading(false);
-      }
-    };
-
-    const fetchEvents = async () => {
-      try {
-        const params = {
-          ...(selectedTags.length > 0 ? { projectTags: selectedTags } : {}),
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
-        };
-        const response = await axios.get(`${apiUrl}/api/events`, { params });
-        setEvents(response.data);
-        setError(null);
-      } catch (error) {
-        console.error('Error fetching events:', error);
-        setError('Failed to fetch events. Please try again.');
+        console.error('Error in auth/data check:', error);
+        setError('Failed to load data. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchTags = async () => {
-      try {
-        const response = await axios.get(`${apiUrl}/api/events/tags`);
-        setAvailableTags(response.data);
-      } catch (error) {
-        console.error('Error fetching tags:', error);
-      }
-    };
-
-    checkAuthStatus();
+    checkAuthAndFetchData();
   }, [apiUrl, selectedTags, startDate, endDate]);
 
   const handleGoogleAuth = () => {
     const authUrl = `${apiUrl}/auth/google`;
-    console.log('Redirecting to:', authUrl);
     window.location.replace(authUrl);
   };
 
@@ -222,9 +242,15 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${apiUrl}/auth/logout`);
+      if (!isTestUser) {
+        await axios.post(`${apiUrl}/auth/logout`);
+      } else {
+        // Remove test token cookie
+        document.cookie = 'access_token=test-token-123; path=/; domain=localhost; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      }
       setIsAuthenticated(false);
       setUserEmail(null);
+      setIsTestUser(false);
       setEvents([]);
       setAvailableTags([]);
       setSelectedTags([]);
@@ -266,7 +292,26 @@ function App() {
         </div>
         <div className="header-buttons">
           {!isAuthenticated ? (
-            <button onClick={handleGoogleAuth}>Connect Google Calendar</button>
+            <div className="auth-prompt">
+              <h2>Welcome to Time Tracking</h2>
+              <p>Please connect your Google Calendar to get started.</p>
+              <div className="auth-buttons">
+                <button onClick={handleGoogleAuth}>Connect Google Calendar</button>
+                <button 
+                  onClick={() => {
+                    console.log('Test user login button clicked');
+                    // Set test user cookie with explicit expiration
+                    document.cookie = `access_token=test-token-123; path=/; domain=localhost; max-age=3600`;
+                    console.log('Set test token cookie, reloading page');
+                    // Refresh the page to trigger auth check
+                    window.location.reload();
+                  }}
+                  className="test-user-button"
+                >
+                  Login as Test User
+                </button>
+              </div>
+            </div>
           ) : (
             <button 
               className="logout-button"

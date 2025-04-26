@@ -353,4 +353,31 @@ button:hover {
   font-size: 0.7rem;
   color: #999;
   opacity: 0.7;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.test-user-button {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.test-user-button:hover {
+  background-color: #5a6268;
+}
+
+.test-user-button:active {
+  background-color: #545b62;
 } 

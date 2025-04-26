@@ -7,5 +7,12 @@ module.exports = {
     new webpack.DefinePlugin({
       VERSION: JSON.stringify(require('./package.json').version)
     })
-  ]
+  ],
+  // Ignore source-map warnings for react-datepicker
+  ignoreWarnings: [
+    {
+      module: /node_modules\/react-datepicker/,
+      message: /Failed to parse source map/,
+    },
+  ],
 }; 
