@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -7,7 +7,7 @@ import WeeklyReport from './components/WeeklyReport/WeeklyReport';
 import BouncingLogo from './components/BouncingLogo/BouncingLogo';
 import HelpModal from './components/HelpModal/HelpModal';
 import { VERSION } from './constants';
-import { Event, ProjectTag } from './types';
+import { Event } from './types';
 import EventListItem from './components/EventListItem';
 
 // Configure axios to include credentials
@@ -32,36 +32,6 @@ function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
   return `${hours}h ${mins}m`;
-}
-
-function formatEventDateTime(start: string, end: string): string {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
-  
-  const isSameDay = startDate.toDateString() === endDate.toDateString();
-  
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true 
-    }).toLowerCase();
-  };
-  
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: startDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-    });
-  };
-
-  if (isSameDay) {
-    return `${formatDate(startDate)}, ${formatTime(startDate)} to ${formatTime(endDate)}`;
-  } else {
-    return `${formatDate(startDate)} at ${formatTime(startDate)} to ${formatDate(endDate)} at ${formatTime(endDate)}`;
-  }
 }
 
 function getWeekRange(): { start: Date; end: Date } {
