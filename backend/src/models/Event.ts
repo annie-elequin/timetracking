@@ -1,35 +1,27 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
-interface ProjectTag {
-  tag: string;
-  description: string;
-}
-
 export interface IEvent extends Document {
+  userId: mongoose.Types.ObjectId;
   googleEventId: string;
   summary: string;
   description?: string;
   start: Date;
   end: Date;
-  projectTags: ProjectTag[];
+  projectTags: mongoose.Types.ObjectId[]; // References to ProjectTag documents
   duration: number; // in minutes
   createdAt: Date;
   updatedAt: Date;
 }
 
-const ProjectTagSchema = new Schema<ProjectTag>({
-  tag: { type: String, required: true },
-  description: { type: String, default: '' }
-});
-
 const EventSchema = new Schema<IEvent>(
   {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     googleEventId: { type: String, required: true, unique: true },
     summary: { type: String, required: true },
     description: String,
     start: { type: Date, required: true },
     end: { type: Date, required: true },
-    projectTags: [ProjectTagSchema],
+    projectTags: [{ type: Schema.Types.ObjectId, ref: 'ProjectTag' }],
     duration: { type: Number, required: true }, // stored in minutes
   },
   {

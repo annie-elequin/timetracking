@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { Event } from '../models/Event';
+import { ProjectTag } from '../models/ProjectTag';
+import { User } from '../models/User';
 
 const router = Router();
 
@@ -24,6 +26,12 @@ export const initEventsRoutes = (oauth2Client: OAuth2Client, tokens: () => any) 
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
+      // Get user from session/token
+      const user = await User.findOne({ email: currentTokens.email });
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
       const { projectTag } = req.query;
       const timeMin = req.query.timeMin as string || new Date().toISOString();
       const maxResults = req.query.maxResults || 10;
@@ -40,11 +48,12 @@ export const initEventsRoutes = (oauth2Client: OAuth2Client, tokens: () => any) 
 
       // Process events and extract project tags with descriptions
       const events = response.data.items?.map(event => {
-        const projectTags = extractProjectTags(event.description);
+        // Extract tags from description for lookup/creation only
+        const extractedTags = extractProjectTags(event.description);
         return {
           ...event,
-          projectTags,
-          // Store the event in our database
+          extractedTags, // temporary, not for DB
+          userId: user._id,
           _id: event.id,
           googleEventId: event.id,
           start: new Date(event.start?.dateTime || event.start?.date || ''),
@@ -58,31 +67,66 @@ export const initEventsRoutes = (oauth2Client: OAuth2Client, tokens: () => any) 
 
       // Filter by project tag if specified
       const filteredEvents = projectTag
-        ? events.filter(event => event.projectTags.some(tag => tag.tag === projectTag))
+        ? events.filter(event => event.extractedTags.some(tag => tag.tag === projectTag))
         : events;
 
-      // Store events in our database
-      await Event.bulkWrite(
-        events.map(event => ({
-          updateOne: {
-            filter: { googleEventId: event.googleEventId },
-            update: { $set: event },
-            upsert: true,
-          },
-        }))
-      );
+      // Store events and create/update project tags
+      for (const event of events) {
+        // Create/update project tags and get their ObjectIds
+        const tagIds = await Promise.all(
+          (event.extractedTags || []).map(async ({ tag, description }) => {
+            const projectTag = await ProjectTag.findOneAndUpdate(
+              { userId: user._id, tag },
+              { userId: user._id, tag, description },
+              { upsert: true, new: true }
+            );
+            return projectTag._id;
+          })
+        );
 
-      res.json(filteredEvents);
+        // Explicitly set only the fields we want to update
+        await Event.findOneAndUpdate(
+          { googleEventId: event.googleEventId },
+          {
+            userId: event.userId,
+            googleEventId: event.googleEventId,
+            summary: event.summary,
+            description: event.description,
+            start: event.start,
+            end: event.end,
+            duration: event.duration,
+            projectTags: tagIds
+          },
+          { upsert: true }
+        );
+      }
+
+      // Populate project tags for response
+      const populatedEvents = await Event.find({
+        googleEventId: { $in: filteredEvents.map(e => e.googleEventId) }
+      }).populate('projectTags');
+
+      res.json(populatedEvents);
     } catch (error) {
-      console.error('Error fetching events:', error);
+      console.error('Events.ts: Error fetching events:', error);
       res.status(500).json({ error: 'Failed to fetch events' });
     }
   });
 
-  // Get all unique project tags
-  router.get('/tags', async (_req: Request, res: Response) => {
+  // Get all unique project tags for the current user
+  router.get('/tags', async (req: Request, res: Response) => {
     try {
-      const tags = await Event.distinct('projectTags.tag');
+      const currentTokens = tokens();
+      if (!currentTokens) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const user = await User.findOne({ email: currentTokens.email });
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      const tags = await ProjectTag.find({ userId: user._id });
       res.json(tags);
     } catch (error) {
       console.error('Error fetching tags:', error);

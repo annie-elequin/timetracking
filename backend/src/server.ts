@@ -163,7 +163,6 @@ app.get('/api/events', async (req: Request, res: Response) => {
           description: event.description,
           start: event.start?.dateTime || event.start?.date,
           end: event.end?.dateTime || event.end?.date,
-          projectTags: event.projectTags,
           duration: event.duration
         },
         { upsert: true }
@@ -172,7 +171,7 @@ app.get('/api/events', async (req: Request, res: Response) => {
 
     res.json(taggedEvents);
   } catch (error) {
-    console.error('Error fetching events:', error);
+    console.error('Server.ts: Error fetching events:', error);
     res.status(500).json({ error: 'Failed to fetch events' });
   }
 });

@@ -7,19 +7,11 @@ import WeeklyReport from './components/WeeklyReport/WeeklyReport';
 import BouncingLogo from './components/BouncingLogo/BouncingLogo';
 import HelpModal from './components/HelpModal/HelpModal';
 import { VERSION } from './constants';
+import { Event, ProjectTag } from './types';
+import EventListItem from './components/EventListItem';
 
 // Configure axios to include credentials
 axios.defaults.withCredentials = true;
-
-interface Event {
-  id: string;
-  summary: string;
-  description?: string;
-  start: { dateTime: string };
-  end: { dateTime: string };
-  projectTags?: { tag: string; description: string }[];
-  duration?: number;
-}
 
 interface GroupedEvents {
   [key: string]: {
@@ -58,6 +50,7 @@ function formatEventDateTime(start: string, end: string): string {
   
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { 
+      weekday: 'long',
       month: 'long',
       day: 'numeric',
       year: startDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
@@ -129,7 +122,7 @@ function App() {
               summary: 'Test Meeting 1',
               start: { dateTime: new Date().toISOString() },
               end: { dateTime: new Date(Date.now() + 3600000).toISOString() },
-              projectTags: [{ tag: 'test-project', description: 'Test Project' }],
+              projectTags: [{ _id: '1', tag: 'test-project', description: 'Test Project', userId: 'test-user' }],
               duration: 60
             },
             {
@@ -137,7 +130,7 @@ function App() {
               summary: 'Test Meeting 2',
               start: { dateTime: new Date(Date.now() - 7200000).toISOString() },
               end: { dateTime: new Date(Date.now() - 3600000).toISOString() },
-              projectTags: [{ tag: 'demo', description: 'Demo Project' }],
+              projectTags: [{ _id: '2', tag: 'demo', description: 'Demo Project', userId: 'test-user' }],
               duration: 120
             }
           ]);
@@ -195,7 +188,8 @@ function App() {
 
   const groupEventsByTag = (events: Event[]): GroupedEvents => {
     return events.reduce((groups: GroupedEvents, event) => {
-      event.projectTags?.forEach(({ tag }) => {
+      event.projectTags?.forEach((projectTag) => {
+        const tag = projectTag.tag;
         if (!groups[tag]) {
           groups[tag] = { events: [], totalDuration: 0 };
         }
@@ -207,18 +201,8 @@ function App() {
   };
 
   const renderEvent = (event: Event) => (
-    <li key={event.id} className="event">
-      <h3>{event.summary}</h3>
-      <div className="event-details">
-        <p className="time">
-          {formatEventDateTime(event.start.dateTime, event.end.dateTime)}
-        </p>
-        {event.duration && (
-          <p className="duration">
-            Duration: {formatDuration(event.duration)}
-          </p>
-        )}
-      </div>
+    <li key={event.id}>
+      <EventListItem event={event} />
     </li>
   );
 
@@ -258,6 +242,21 @@ function App() {
       console.error('Error logging out:', error);
     }
   };
+
+  // Dismiss weekly report with Backspace key
+  useEffect(() => {
+    if (!showReport) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Backspace') {
+        setShowReport(false);
+        setSelectedTags([]);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showReport]);
 
   if (showReport) {
     return (
@@ -420,7 +419,7 @@ function App() {
                 {Object.entries(groupedEvents!).map(([tag, { events, totalDuration }]) => (
                   <div key={tag} className="tag-group">
                     <h3 className="tag-header">
-                      #{tag}
+                      {tag.charAt(0).toUpperCase() + tag.slice(1)}
                       <span className="total-duration">
                         Total: {formatDuration(totalDuration)}
                       </span>

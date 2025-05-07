@@ -1,6 +1,7 @@
 import React from 'react';
 import './WeeklyReport.css';
 import { Event } from '../../types';
+import EventListItem from '../EventListItem';
 
 interface WeeklyReportProps {
   events: Event[];
@@ -25,6 +26,7 @@ function formatEventDateTime(start: string, end: string): string {
   
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { 
+      weekday: 'long',
       month: 'long',
       day: 'numeric',
       year: startDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
@@ -47,7 +49,8 @@ function formatDuration(minutes: number): string {
 function WeeklyReport({ events, selectedTags, startDate, endDate }: WeeklyReportProps) {
   // Group events by tag
   const groupedEvents = events.reduce((groups: { [key: string]: Event[] }, event) => {
-    event.projectTags?.forEach(({ tag }) => {
+    event.projectTags?.forEach((projectTag) => {
+      const tag = projectTag.tag;
       if (selectedTags.includes(tag)) {
         if (!groups[tag]) {
           groups[tag] = [];
@@ -90,19 +93,13 @@ function WeeklyReport({ events, selectedTags, startDate, endDate }: WeeklyReport
         {Object.entries(groupedEvents).map(([tag, tagEvents]) => (
           <section key={tag} className="tag-section">
             <div className="tag-header">
-              <h2>#{tag}</h2>
+              <h2>{tag.charAt(0).toUpperCase() + tag.slice(1)}</h2>
               <span className="tag-total">{formatDuration(tagTotals[tag])}</span>
             </div>
             
             <div className="events-list">
               {tagEvents.map(event => (
-                <div key={event.id} className="event-item">
-                  <div className="event-summary">{event.summary}</div>
-                  <div className="event-details">
-                    <span className="event-time">{formatEventDateTime(event.start.dateTime, event.end.dateTime)}</span>
-                    <span className="event-duration">{formatDuration(event.duration || 0)}</span>
-                  </div>
-                </div>
+                <EventListItem key={event.id} event={event} />
               ))}
             </div>
           </section>
